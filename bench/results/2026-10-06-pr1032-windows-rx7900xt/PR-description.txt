@@ -1,0 +1,57 @@
+Clients written against OpenAI's Responses API continue a conversation with `previous_response_id` and read or
+delete results by ID (`responses.retrieve`, `responses.delete`). On Strata today these requests are refused
+(`previous_response_id` is a 400, the ID routes are 404), so such a client has to be rewritten to resend the whole
+conversation. I ran into this running Strata on Windows.
+
+This adds optional, bounded storage to the existing Responses adapter: create a response, send only the next input
+with `previous_response_id`, then retrieve or delete the stored result.
+
+**Off by default, and off means unchanged.** Without `--responses-store-mib` (or `"responses_store_mib"` in the
+config), status codes and response fields are the same as on main: `store` is not looked at (the answer says
+`store: false`) and `previous_response_id` is refused as before (`test_disabled_keeps_the_stateless_behavior`).
+
+**When on** (`--responses-store-mib 64`, the config key, or the web page's Model settings):
+- `previous_response_id` continues a stored response through the existing generation path, including function-call
+  outputs and streaming. Top-level `instructions`, tools and generation settings are not inherited, as in OpenAI's API.
+- `GET /v1/responses/{id}` and `DELETE /v1/responses/{id}`; other routes under it (`input_items`, `cancel`) answer
+  "not supported".
+- Requests are stored unless they say `store: false`. Completed and incomplete responses are saved before their final
+  event; failed, cancelled and in-progress ones are not.
+- Bounded: the MiB budget counts the serialized UTF-8 JSON including replay history, at most 256 records, 3,600 s
+  lifetime (`responses_store_ttl_s`), oldest evicted first. A record that cannot fit is HTTP 413 (`response.failed`
+  once streaming has started); a replay that alone exceeds the budget is refused before the model runs.
+- Each child stores its own history, so branching works and deleting a parent does not break its children.
+- The same API key, Host, browser-Origin and CORS checks as the other routes (a DELETE has no body, so it does not
+  need the JSON content type a POST does).
+
+**The conversation cache.** A continuation reads token for token the same prompt as a client that sends the whole
+conversation, and the previous turn's prompt is its start
+(`test_a_continuation_reads_the_same_prompt_as_the_whole_history`), so the cache is reused as it is for Codex.
+
+Process memory only, lost on restart, and separate from the engine's KV cache. Builds on the stateless
+implementation from #451; the inference engine is unchanged.
+
+**Measured on the current revision `7b95e19`**, on 2026-10-06: Windows, RX 7900 XT (HIP),
+Qwen3.8-Flash-Next IQ2_XS, 32K context, 64 MiB Responses store. Using `check_pr1032.py`
+(Python standard-library HTTP client), the first turn had 784 input tokens and took 7.0 s.
+The second turn used only new input and `previous_response_id`: 812 input tokens, **777 cached tokens
+(95.69%)**, and 0.9 s elapsed for the request. This is one small functional test, not a throughput benchmark.
+
+All 10 checks in that script passed: save, continuation, retrieve, streamed continuation/retrieval, delete,
+404 after deletion, continuing a surviving child after its parent's deletion, and `store: false`.
+The official OpenAI Python SDK **3.24.0** also passed create/continue/retrieve/stream/delete checks on this
+revision. A real HTTP DELETE from an allowed CORS origin, without a body or Content-Type, returned 200 after
+its preflight. The temporary localhost test service unloaded the model and exited.
+
+[Reproduction script and measured results](https://github.com/mdwsk88/Strata/tree/codex/pr1032-windows-results/bench/results/2026-10-06-pr1032-windows-rx7900xt).
+
+**Tests:** On Windows, 292 run, 0 failed, 5 skipped (environment-dependent; mock engine), with optional
+`openai==3.24.0` and `jsonschema==4.26.0`. The previous macOS run was also 292 run, 0 failed, 7 skipped. 24 are new: CRUD,
+continuation, the replayed prompt, branching, tool results, expiry, byte/count limits, concurrency, validation,
+failures, auth/CORS, the unchanged default, the Settings key and an optional OpenAI SDK round trip (`openai==3.24.0`).
+
+    python -m unittest serve.test_responses serve.test_response_store serve.test_runconfig
+    python -m unittest serve.test_server serve.test_security serve.test_structured serve.test_lifecycle serve.test_parallel serve.test_monitor serve.test_mcp serve.test_detok serve.test_winjob serve.test_vram
+
+This is one self-contained commit on current main. If you would rather land your own version, cherry-picking it
+keeps the tests and docs together.
