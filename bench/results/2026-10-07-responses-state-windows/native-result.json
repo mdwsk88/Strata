@@ -1,0 +1,177 @@
+{
+  "revision": "c580645e5a986aadb1a4aed5b0a89f48e9230f14",
+  "backend": "HIP",
+  "gpu": "RX 7900 XT",
+  "model": "qwen3.8-flash-next-iq2_xs",
+  "context": 32768,
+  "storage_mib": 64,
+  "passed": true,
+  "turns": [
+    {
+      "status": 200,
+      "seconds": 8.531,
+      "stream": false,
+      "store": true,
+      "usage": {
+        "input_tokens": 784,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 2,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 786
+      },
+      "output_text": "OK"
+    },
+    {
+      "status": 200,
+      "seconds": 1.109,
+      "stream": false,
+      "store": true,
+      "usage": {
+        "input_tokens": 812,
+        "input_tokens_details": {
+          "cached_tokens": 777
+        },
+        "output_tokens": 7,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 819
+      },
+      "output_text": "Strata runs the model."
+    },
+    {
+      "status": 200,
+      "seconds": 1.016,
+      "stream": true,
+      "store": true,
+      "usage": {
+        "input_tokens": 839,
+        "input_tokens_details": {
+          "cached_tokens": 805
+        },
+        "output_tokens": 7,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 846
+      },
+      "output_text": "Strata runs the model."
+    },
+    {
+      "status": 200,
+      "seconds": 0.625,
+      "stream": false,
+      "store": true,
+      "usage": {
+        "input_tokens": 807,
+        "input_tokens_details": {
+          "cached_tokens": 777
+        },
+        "output_tokens": 2,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 809
+      },
+      "output_text": "1"
+    },
+    {
+      "status": 200,
+      "seconds": 0.86,
+      "stream": false,
+      "store": true,
+      "usage": {
+        "input_tokens": 829,
+        "input_tokens_details": {
+          "cached_tokens": 810
+        },
+        "output_tokens": 3,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 832
+      },
+      "output_text": "System RAM"
+    },
+    {
+      "status": 200,
+      "seconds": 0.969,
+      "stream": false,
+      "store": false,
+      "usage": {
+        "input_tokens": 835,
+        "input_tokens_details": {
+          "cached_tokens": 777
+        },
+        "output_tokens": 3,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 838
+      },
+      "output_text": "Strata"
+    }
+  ],
+  "additional_checks": {
+    "official_sdk_create_continue_retrieve": true,
+    "official_sdk_stream_retrieve": true,
+    "allowed_origin_delete_without_content_type": true,
+    "deleted_id_returns_404": true
+  },
+  "helper_sha256": "b45c17b3c70509346aba35217bd19acda3c50299582f7d414d47d50d6f40ea6e",
+  "helper_checks": [
+    {
+      "name": "服务器运行的是 PR 的新代码",
+      "passed": true
+    },
+    {
+      "name": "第 1 轮：创建并保存",
+      "passed": true
+    },
+    {
+      "name": "第 2 轮：按 ID 续接",
+      "passed": true
+    },
+    {
+      "name": "按 ID 取回",
+      "passed": true
+    },
+    {
+      "name": "流式续接",
+      "passed": true
+    },
+    {
+      "name": "流式结果可取回",
+      "passed": true
+    },
+    {
+      "name": "删除",
+      "passed": true
+    },
+    {
+      "name": "删除后再取回是 404",
+      "passed": true
+    },
+    {
+      "name": "父响应删掉后，子响应仍能续接",
+      "passed": true
+    },
+    {
+      "name": "store: false 能续接且不保存",
+      "passed": true
+    }
+  ],
+  "cache": {
+    "input_tokens": 812,
+    "cached_tokens": 777,
+    "percent": 95.69
+  },
+  "sdk_version": "3.24.0",
+  "published_revision": "30ee0c375313266abd3200687e4609358bf5e8f4",
+  "source_tree": "ee65a94ab40f8b5d92732446c3c4d4b56e3c97f7",
+  "base_revision": "82f46a8c8f475f001ad76d92f58f4a4f8ffb0253"
+}

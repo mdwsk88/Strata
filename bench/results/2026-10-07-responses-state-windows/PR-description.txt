@@ -1,0 +1,18 @@
+A local client using the OpenAI Python SDK cannot currently continue a Strata response with `previous_response_id` or retrieve/delete its result by ID. This adds opt-in bounded history to the existing Responses adapter so the client can send only new input on later turns.
+
+Enable it with `--responses-store-mib 64`, `"responses_store_mib": 64` in the config, or Model settings. With storage disabled, POST /v1/responses keeps the existing stateless behavior, including accepting/ignoring `store: true`.
+
+- Continue through the existing generation path, including function-call outputs and streaming.
+- Add GET and DELETE /v1/responses/{id}, reusing the API-key, Host and browser-Origin checks.
+- Save completed/incomplete responses before their final event; honor `store: false`.
+- Keep independent child histories, so deleting a parent does not break surviving children. Top-level instructions, tools and generation settings must be sent again.
+
+Storage is process memory only and is lost on restart. The serialized JSON budget includes replay history, with a maximum of 256 records and a default 3,600-second lifetime. Oldest records are evicted; oversized records are refused. Python bookkeeping and temporary copies need additional memory. This does not change the inference engine or its KV cache.
+
+**Validation on the new base:** 476 tests exercised on Windows: 470 passed, 6 environment-dependent skips. The 54 Responses/config tests passed, as did the 422 service regression tests using a long-path TEMP/TMP directory. The report records a pre-existing short-path TEMP assertion failure, reproduced on unmodified upstream main.
+
+Native IQ2_XS validation also passed on the RX 7900 XT (HIP), 32K context and a 64 MiB store, using the installed engine. All 10 helper checks and the official OpenAI SDK 3.24.0 round trip passed, including streaming and a bodyless DELETE from an allowed CORS origin. A continuation reused **777/812 input tokens (95.69%)** and took **1.109 s** for the whole request; this was a functional check, not a throughput benchmark.
+
+[Commands, source-tree identity and measured results](https://github.com/mdwsk88/Strata/tree/codex/pr1032-windows-results/bench/results/2026-10-07-responses-state-windows).
+
+This replaces #1032 after main's history rewrite, following the [maintainer's instructions](https://github.com/Niko1221/Strata/pull/1032#issuecomment-6013973026). It contains one feature commit on `82f46a8`, with the existing implementation, tests and documentation carried forward.
